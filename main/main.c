@@ -62,9 +62,11 @@ static esp_vhci_host_callback_t vhci_host_cb = {
 };
 
 static void bt_tx_pkt_ready(void) {
+    uart_set_rts(UART_NUM_0, 1);
 }
 
 static int bt_rx_pkt(uint8_t *data, uint16_t len) {
+    uart_write_bytes(UART_NUM_0, data, len);
     return 0;
 }
 
@@ -82,6 +84,7 @@ static void hci_rx_task(void *arg) {
                 rx_len += uart_read_bytes(UART_NUM_0, &pkt->cmd_hdr, sizeof(pkt->cmd_hdr), portMAX_DELAY);
                 if (rx_len == (1 +sizeof(pkt->cmd_hdr))) {
                     rx_len += uart_read_bytes(UART_NUM_0, pkt->cmd_data, pkt->cmd_hdr.param_len, portMAX_DELAY);
+                    uart_set_rts(UART_NUM_0, 0);
                     esp_vhci_host_send_packet(uart_buffer, rx_len);
                 }
                 break;
@@ -89,6 +92,7 @@ static void hci_rx_task(void *arg) {
                 rx_len += uart_read_bytes(UART_NUM_0, &pkt->acl_hdr, sizeof(pkt->acl_hdr), portMAX_DELAY);
                 if (rx_len == (1 + sizeof(pkt->acl_hdr))) {
                     rx_len += uart_read_bytes(UART_NUM_0, pkt->acl_data, pkt->acl_hdr.len, portMAX_DELAY);
+                    uart_set_rts(UART_NUM_0, 0);
                     esp_vhci_host_send_packet(uart_buffer, rx_len);
                 }
                 break;
@@ -100,6 +104,7 @@ static void hci_rx_task(void *arg) {
                 rx_len += uart_read_bytes(UART_NUM_0, &pkt->evt_hdr, sizeof(pkt->evt_hdr), portMAX_DELAY);
                 if (rx_len == (1 + sizeof(pkt->evt_hdr))) {
                     rx_len += uart_read_bytes(UART_NUM_0, pkt->evt_data, pkt->evt_hdr.len, portMAX_DELAY);
+                    uart_set_rts(UART_NUM_0, 0);
                     esp_vhci_host_send_packet(uart_buffer, rx_len);
                 }
                 break;
